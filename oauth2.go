@@ -170,7 +170,7 @@ func (coauth2 *CaddyOauth2) HandleOAuthCallback(w http.ResponseWriter, r *http.R
 	}
 
 	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback token header", zap.String("OAuth2 token json string", tj))
-	r.Header.Add("oauth-token", tj)
+	r.Header.Add("oauth2-token", tj)
 
 	next(w, r)
 }
