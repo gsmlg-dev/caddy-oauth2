@@ -9,7 +9,12 @@ import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
+	"context"
+	"encoding/json"
+	"net/url"
+
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
 const DirectiveName = "caddy_oauth2"
@@ -51,13 +56,13 @@ func (coauth2 *CaddyOauth2) Provision(ctx caddy.Context) error {
 }
 
 func (coauth2 *CaddyOauth2) ServeHTTP(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
-	done, e := coauth2.HandleRequestAuth(w, r)
-	if e != nil {
-		return e
+	if coauth2.IsAuthPath(w, r) {
+		return coauth2.HandleAuthPath(w, r)
 	}
-	if done {
-		return nil
+	if coauth2.IsOAuthCallbackRequest(w, r) {
+		return coauth2.HandleOAuthCallback(w, r, next)
 	}
+
 	return next.ServeHTTP(w, r)
 }
 
@@ -109,6 +114,65 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 	}
 
 	return &coauth2, nil
+}
+
+func (coauth2 *CaddyOauth2) IsAuthPath(w http.ResponseWriter, r *http.Request) bool {
+	ozc := string(coauth2.AuthPath)
+	cu, _ := url.Parse(ozc)
+	return cu.Path == r.URL.Path
+}
+
+func (coauth2 *CaddyOauth2) HandleAuthPath(w http.ResponseWriter, r *http.Request) (bool, error) {
+	oauthConfig := oauth2.Config{
+		ClientID:     string(coauth2.ClientID),
+		ClientSecret: string(coauth2.ClientSecret),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  string(coauth2.AuthURL),
+			TokenURL: string(coauth2.TokenURL),
+		},
+		RedirectURL: string(coauth2.RedirectURL),
+	}
+	url := oauthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
+	coauth2.logger.Debug("caddy_oauth2 redirect to oauth2 server", zap.String("url", url))
+	return http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+func (coauth2 *CaddyOauth2) IsOAuthCallbackRequest(w http.ResponseWriter, r *http.Request) bool {
+	ozc := string(coauth2.RedirectURL)
+	cu, _ := url.Parse(ozc)
+	return cu.Path == r.URL.Path
+}
+
+func (coauth2 *CaddyOauth2) HandleOAuthCallback(w http.ResponseWriter, r *http.Request, next caddyhttp.Handler) error {
+	coauth2.logger.Debug("caddy_oauth2 handle oauth coauth2 callback", zap.Any("coauth2", r.URL))
+
+	oauthConfig := &oauth2.Config{
+		ClientID:     string(coauth2.ClientID),
+		ClientSecret: string(coauth2.ClientSecret),
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  string(coauth2.AuthURL),
+			TokenURL: string(coauth2.TokenURL),
+		},
+		RedirectURL: string(coauth2.RedirectURL),
+	}
+
+	code := r.URL.Query().Get("code")
+	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback code", zap.String("code", code))
+
+	token, err := oauthConfig.Exchange(coauth2.ctx, code, oauth2.AccessTypeOnline)
+	if err != nil {
+		return err
+	}
+	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback token", zap.Any("token", token))
+	tj, err := json.Marshal(token)
+	if err != nil {
+		return err
+	}
+
+	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback token header", zap.String("OAuth2 token json string", tj))
+	r.Header.Add("oauth-token", tj)
+
+	next(w, r)
 }
 
 // Interface guards
