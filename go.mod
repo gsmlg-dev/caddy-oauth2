@@ -3,7 +3,7 @@ module github.com/gsmlg-dev/caddy-oauth2
 go 1.19
 
 require (
-	github.com/caddyserver/caddy/v2 v2.6.2
+	github.com/caddyserver/caddy/v2 v2.5.2
 	go.uber.org/zap v1.23.0
 	golang.org/x/oauth2 v0.0.0-20221014153046-6fdb5e3db783
 )
@@ -39,7 +39,6 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -84,8 +83,6 @@ require (
 	github.com/smallstep/nosql v0.4.0 // indirect
 	github.com/smallstep/truststore v0.12.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/cobra v1.5.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/tailscale/tscert v0.0.0-20220316030059-54bbcb9f74e2 // indirect
 	github.com/urfave/cli v1.22.5 // indirect
@@ -111,6 +108,5 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	howett.net/plist v1.0.0 // indirect
 )
