@@ -33,6 +33,7 @@ type CaddyOauth2 struct {
 	AuthURL      caddyhttp.WeakString `json:"auth_url,omitempty"`
 	TokenURL     caddyhttp.WeakString `json:"token_url,omitempty"`
 	RedirectURL  caddyhttp.WeakString `json:"redirect_url,omitempty"`
+	Scopes       []string             `json:"scopes,omitempty"`
 
 	// config *oauth2.Config
 
@@ -106,6 +107,12 @@ func parseCaddyfile(h httpcaddyfile.Helper) (caddyhttp.MiddlewareHandler, error)
 				}
 				coauth2.RedirectURL = caddyhttp.WeakString(h.Val())
 
+			case "scopes":
+				coauth2.Scopes = h.RemainingArgs()
+				if len(coauth2.Scopes) == 0 {
+					return nil, h.ArgErr()
+				}
+
 			default:
 				return nil, h.Errf("unknown subdirective '%s'", h.Val())
 			}
@@ -130,6 +137,7 @@ func (coauth2 *CaddyOauth2) HandleAuthPath(w http.ResponseWriter, r *http.Reques
 			TokenURL: string(coauth2.TokenURL),
 		},
 		RedirectURL: string(coauth2.RedirectURL),
+		Scopes:      coauth2.Scopes,
 	}
 	url := oauthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	coauth2.logger.Debug("caddy_oauth2 redirect to oauth2 server", zap.String("url", url))
@@ -154,6 +162,7 @@ func (coauth2 *CaddyOauth2) HandleOAuthCallback(w http.ResponseWriter, r *http.R
 			TokenURL: string(coauth2.TokenURL),
 		},
 		RedirectURL: string(coauth2.RedirectURL),
+		Scopes:      coauth2.Scopes,
 	}
 
 	code := r.URL.Query().Get("code")

@@ -11,6 +11,7 @@ caddy_oauth2 {
 	auth_url "<auth url>"
 	token_url "<token url>"
 	redirect_url "<host>/oauth2/google/callback"
+	scopes "name" "avatar" "email"
 }
 ```
 
