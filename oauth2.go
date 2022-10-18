@@ -1,4 +1,4 @@
-package oauth2
+package caddy_oauth2
 
 import (
 	weakrand "math/rand"
@@ -9,7 +9,6 @@ import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
 
-	"context"
 	"encoding/json"
 	"net/url"
 
@@ -122,7 +121,7 @@ func (coauth2 *CaddyOauth2) IsAuthPath(w http.ResponseWriter, r *http.Request) b
 	return cu.Path == r.URL.Path
 }
 
-func (coauth2 *CaddyOauth2) HandleAuthPath(w http.ResponseWriter, r *http.Request) (bool, error) {
+func (coauth2 *CaddyOauth2) HandleAuthPath(w http.ResponseWriter, r *http.Request) error {
 	oauthConfig := oauth2.Config{
 		ClientID:     string(coauth2.ClientID),
 		ClientSecret: string(coauth2.ClientSecret),
@@ -134,7 +133,8 @@ func (coauth2 *CaddyOauth2) HandleAuthPath(w http.ResponseWriter, r *http.Reques
 	}
 	url := oauthConfig.AuthCodeURL("state", oauth2.AccessTypeOnline)
 	coauth2.logger.Debug("caddy_oauth2 redirect to oauth2 server", zap.String("url", url))
-	return http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	return nil
 }
 
 func (coauth2 *CaddyOauth2) IsOAuthCallbackRequest(w http.ResponseWriter, r *http.Request) bool {
@@ -169,10 +169,10 @@ func (coauth2 *CaddyOauth2) HandleOAuthCallback(w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback token header", zap.String("OAuth2 token json string", tj))
-	r.Header.Add("oauth2-token", tj)
+	coauth2.logger.Debug("caddy_oauth2 handle oauth2 callback token header", zap.ByteString("OAuth2 token json string", tj))
+	r.Header.Add("oauth2-token", string(tj))
 
-	next(w, r)
+	return next.ServeHTTP(w, r)
 }
 
 // Interface guards
